@@ -1,0 +1,13 @@
+Template			
+Feature-based Test Scenarios	[Business action/ or featured area] + [high-level outcome]	SCN-CAND-ADD-001	Add New Candidate
+Test condition	[Object / area] + [behavior, validation hoặc rule]	COND-CAND-ADD-001	Candidate is created successfully with valid Candidate data
+		COND-CAND-ADD-002	Invalid Candidate input is rejected and does not create a Candidate record
+		COND-CAND-ADD-003	Candidate creation can be cancelled or interrupted without unintended record creation
+Test_Cases	Test ID	TC-[AREA]-[FUNCTION]-[NUMBER]	TC-CAND-ADD-001
+	Test objectives	Verify that [expected behavior] when [in specific condition]	
+	Priority	High	
+	Test Preconditions		
+	Test Steps	Action verb + UI object + test data / condition	1. Click the Add button. 2. Enter Candidate information using TD-CAND-ADD-001. 3. Upload FILE-RESUME-VALID-001. 4. Click Save.
+	Expected Result	- Observable response - Data/state change	
+	Actual Results 	NOT RUN	
+	Notes 	Perspective: Positive | Technique: Boundary Value Analysis (BVA): minimum valid and maximum valid.	

@@ -1,194 +1,224 @@
 ---
 name: analyze-requirement
-description: Phân tích tài liệu yêu cầu (BRD, FRD, SRS, User Stories, Jira Tickets, UI Mockups) của bất kỳ dự án phần mềm nào — kiểm tra tính đầy đủ theo tiêu chuẩn "Ready for Vibe Coding", trích xuất AC, business rules, field specs, phát hiện điểm mơ hồ (AMB-XX) và rủi ro kiểm thử (RISK-XX). KHÔNG sinh test cases.
+description: Analyze requirement documents (BRD, FRD, SRS, User Stories, Jira Tickets, UI Mockups) for any software project — extract User Stories, Business Requirements, Functional Requirements, Logic Flows, Field Specifications, Traceability Matrix, Ambiguities (AMB-XX), and Testing Risks (RISK-XX). DOES NOT generate test cases. Feeds into $test-plan, $test-case, and $test-data-generator.
 ---
 
-# Workflow: Phân Tích Tài Liệu Yêu Cầu (Requirement Analyzer)
+# Workflow: Requirement Document Analysis (Requirement Analyzer)
 
-Skill này hướng dẫn AI phân tích, bóc tách và rà soát các tài liệu yêu cầu (BRD, FRD, SRS, User Stories, Jira tickets, Wireframe/Mockups) cho **bất kỳ dự án phần mềm nào** (Web, Mobile, Desktop, API). Skill tập trung vào việc làm sáng tỏ logic nghiệp vụ, đặc tả chi tiết các trường dữ liệu, ma trận phân quyền (RBAC), phát hiện rủi ro/điểm mơ hồ và đánh giá tính sẵn sàng của tài liệu theo tiêu chuẩn **"Ready for Vibe Coding / Ready for QA"**.
+This skill guides AI to analyze, dissect, and review requirement documents (BRD, FRD, SRS, User Stories, Jira tickets, Wireframes/Mockups) for **any software project** (Web, Mobile, Desktop, API). The skill focuses on clarifying business logic, functional requirements, detailed field specifications, Role-Based Access Control (RBAC) matrices, Traceability Matrices, and detecting risks/ambiguities before testing.
 
-> ⚠️ **LƯU Ý QUAN TRỌNG:** Workflow này **KHÔNG sinh test cases** — chỉ tập trung phân rã, kiểm tra độ phủ logic, trích xuất đặc tả trường dữ liệu, quy tắc nghiệp vụ và phát hiện các lỗ hổng trong yêu cầu trước khi chuyển giao cho Developer hoặc QA.
-
----
-
-## 1. Đầu Vào (Input Requirements)
-
-Agent có thể nhận từ User một hoặc nhiều thành phần đầu vào sau:
-1. **Requirement Document:** File `.md`, `.doc`, `.pdf`, nội dung Jira Ticket, User Story, PRD, FRD, BRD hoặc SRS.
-2. **UI Mockup / Screenshot / Wireframe (Tùy chọn):** Hình ảnh thiết kế giao diện, sơ đồ Use Case, Figma screenshot hoặc DOM/HTML của trang web.
-3. **Bối cảnh Dự án & Phụ thuộc (Tùy chọn):** Các ticket liên quan, tài liệu kiến trúc hệ thống hiện tại hoặc ghi chú nghiệp vụ.
+> ⚠️ **IMPORTANT NOTE:** This workflow **DOES NOT generate test cases** — it strictly focuses on decomposition, requirement coverage, business rules extraction, field specifications, traceability, and detecting loopholes in requirements before handing off to Test Planning, Test Case Design, and Test Data Generation.
 
 ---
 
-## 2. Tiêu Chuẩn Đánh Giá "Ready For Vibe Coding / Ready For QA"
+## 1. Input Requirements
 
-Một tài liệu yêu cầu đạt chuẩn phải trả lời rõ ràng **12 câu hỏi vàng** (12 Quality Gates):
-
-1. **Who (Actor & Role):** Ai là người thực hiện hành động (Phân định rõ Actor/Role)?
-2. **Preconditions:** Điều kiện tiên quyết cần thỏa mãn trước khi thực hiện là gì?
-3. **Inputs:** Dữ liệu đầu vào gồm những thành phần nào?
-4. **Validation Rules:** Quy tắc kiểm tra tính hợp lệ dữ liệu là gì (min/max length, format, trim space, unique constraint, boundary)?
-5. **Data State Changes:** Dữ liệu nào được tạo mới, cập nhật, xóa hoặc giữ nguyên (CRUD)?
-6. **Success Flow:** Luồng xử lý thành công (Happy Path) diễn ra như thế nào?
-7. **Failure Flow:** Luồng xử lý thất bại / ngoại lệ (Validation error, System error, Timeout, Rate limit, Permission denied) được xử lý ra sao?
-8. **Empty States:** Trạng thái trống (chưa có dữ liệu, danh sách rỗng) hiển thị như thế nào?
-9. **Permission Checks:** Kiểm tra quyền hạn tại API & UI như thế nào (RBAC)?
-10. **Business Rules & Formulas:** Công thức tính toán, quy tắc nghiệp vụ hoặc thuật toán áp dụng là gì?
-11. **Downstream Impacts:** Tác động dây chuyền tới các module/tính năng khác trong hệ thống là gì?
-12. **Acceptance Criteria (AC):** Tiêu chí nghiệm thu rõ ràng, đo lường và kiểm thử được là gì?
+The Agent may receive one or more of the following inputs from the User:
+1. **Requirement Documents:** Business Requirement Document (BRD), Functional Requirement Document (FRD), Software Requirement Specification (SRS), Jira Ticket, User Story, PRD, or text specification.
+2. **UI Mockup / Screenshot / Wireframe (Optional):** Interface design image, Use Case diagram, Figma screenshot, or web page DOM/HTML.
+3. **Project Context & Dependencies (Optional):** Related tickets, existing system architecture documents, API contracts, or business notes.
 
 ---
 
-## 3. Quy Trình Phân Tích 6 Bước (6-Step Workflow)
+## 2. Requirement Quality & Completeness Standards
 
-### Bước 1: Thu thập và Đọc hiểu Bối cảnh (Information Gathering & Context)
-1. Đọc toàn bộ tài liệu yêu cầu được cung cấp.
-2. Trích xuất Metadata: Mã ticket/yêu cầu, Tên tính năng, Module/Hệ thống, Trọng yếu (Priority), Actor liên quan.
-3. Nhận diện bối cảnh tổng quan của hệ thống, các Actors tham gia và các Module bị ảnh hưởng.
+A high-quality requirement analysis must ensure the following key dimensions are thoroughly captured and evaluated:
 
-### Bước 2: Phân tích UI Mockup & Phân rã Phạm vi (UI Analysis & Scope)
-Nếu User cung cấp Mockup/Screenshot/DOM:
-1. **Layout & Navigation:** Breadcrumb, Header, Sidebar, Main Content, Footer.
-2. **UI Components:** Bảng (Tables), Form nhập liệu, Modals, Buttons, Dropdowns, Tabs, Badges.
-3. **Phạm vi (Scope):** Phân định rõ những gì thuộc phạm vi thực hiện (**In Scope**) và những gì nằm ngoài phạm vi (**Out of Scope**).
+1. **Who (Actor & Role):** Clearly identify all user personas, roles, and authorization levels.
+2. **Preconditions & Postconditions:** What conditions must exist before execution, and what changes afterwards?
+3. **Inputs & Field Constraints:** Clear data boundaries, formats, required/optional states, and trimming rules.
+4. **Data State Changes (CRUD):** How entity states mutate across operations (Create, Read, Update, Delete).
+5. **Success (Happy) & Alternative Paths:** Step-by-step nominal and secondary execution flows.
+6. **Failure & Exception Handling:** Detailed behaviors during validation errors, timeouts, rate limits, network loss, and permission denials.
+7. **Business Rules & Calculations:** Explicit formulas, algorithms, threshold rules, and validation logic.
+8. **Permissions (RBAC):** UI & API level access control across distinct roles.
+9. **Traceability:** Direct link between Business Requirements (BR), Functional Requirements (FR), and Acceptance Criteria (AC).
+10. **Downstream Impacts:** Ripple effects on existing modules, APIs, third-party integrations, and databases.
 
-### Bước 3: Chi tiết hóa User Story, AC & Đặc Tả Trường Dữ Liệu (AC & Field Specs)
-1. **User Story Format:** Trích xuất dạng chuẩn: *"Là một [Actor], tôi muốn [Hành động] để [Mục đích]"*.
-2. **Phân rã Acceptance Criteria (AC):** Nhóm AC theo từng luồng logic (Happy path, Alternative flow, Edge cases).
-3. **Lập Bảng Đặc Tả Trường Dữ Liệu (Field Specifications Table):**
-   - Tên trường (Field Label/Name)
-   - Loại UI / Control Type (Input text, Dropdown, Datepicker, Checkbox, Radio, File upload...)
-   - Bắt buộc (Required / Optional)
-   - Validation Rules / Constraints (Ràng buộc độ dài min/max, Định dạng regex/email/phone, Trim space, Trùng lặp/Unique, Giới hạn ngày...)
-   - Giá trị mặc định (Default Value)
-   - Ghi chú (Notes / Dependencies)
+---
 
-### Bước 4: Trích xuất Quy Tắc Nghiệp Vụ, Phân Quyền & Tác Động (Business Rules, RBAC & Impact)
-1. **Business Rules & Formulas:** Liệt kê các quy tắc nghiệp vụ, công thức tính toán, trạng thái dữ liệu (State Transitions).
-2. **Ma trận Phân quyền (RBAC Matrix):** Bảng kiểm tra quyền hạn của từng Actor (Ví dụ: Admin, User, Guest/Public) đối với các hành động Create/Read/Update/Delete.
-3. **Tác động Dây chuyền (Downstream Impacts):** Phân tích sự ảnh hưởng đến các màn hình, API, cơ sở dữ liệu hoặc module khác khi tính năng này thay đổi.
+## 3. 6-Step Analysis Process (6-Step Workflow)
 
-### Bước 5: Đánh giá Chất lượng "Ready for Vibe Coding" (12 Quality Gates Audit)
-Đối chiếu tài liệu yêu cầu với **12 Tiêu chuẩn tại Mục 2**. Đánh dấu trạng thái:
-- ✅ **Đã rõ ràng:** Yêu cầu đã mô tả chi tiết, đủ để Dev viết code / QA viết test.
-- ⚠️ **Thiếu sót / Mơ hồ:** Yêu cầu chưa mô tả hoặc mô tả thiếu ràng buộc (cần clarify).
+### Step 1: Context Gathering & Metadata Extraction (Information Gathering & Context)
+1. Read the provided requirement document in full.
+2. Extract Metadata: Ticket/Requirement ID, Business Requirement Document (BRD), Functional Requirement Document (FRD), Software Requirement Specification (SRS), Feature Name, Module/System, Priority, Related Actors.
+3. Identify the overall system context, participating Actors, and affected Modules.
 
-### Bước 6: Phát hiện Điểm Mơ Hồ (Ambiguities) & Rủi Ro Kiểm Thử (Testing Risks)
+### Step 2: UI Mockup Analysis & Scope Decomposition (UI Analysis & Scope)
+If User provides Mockup/Screenshot/DOM:
+1. **Layout & Navigation:** Breadcrumbs, Header, Sidebar, Main Content, Footer.
+2. **UI Components:** Tables, Form Inputs, Modals, Buttons, Dropdowns, Tabs, Badges.
+3. **Scope:** Clearly define what is in scope (**In Scope**) and what is out of scope (**Out of Scope**).
+
+### Step 3: Extract User Stories, Business Requirements & Functional Logic
+1. **User Story Format:** Extract standard format: *"As a [Actor], I want to [Action], So that [Value/Goal]"*.
+2. **Business Requirements (BR):** Extract core business rules, operational policies, and domain logic.
+3. **Functional Requirements (FR) & Acceptance Criteria (AC):**
+   - Break down each functional requirement into specific Acceptance Criteria (AC).
+   - Group ACs by logical flows (Happy Path, Alternative Flows, Edge Cases, Exception/Failure Flows).
+4. **Logic Flow & State Transitions:** Map state lifecycles (e.g. Draft ➔ Submitted ➔ Approved ➔ Rejected) and branching decision logic.
+
+### Step 4: Build Field Specifications & Data Constraints (Field Specs)
+Create the detailed **Field Specifications Table**:
+- **Field Name / Label**
+- **Control / UI Type:** (Input text, Dropdown, Datepicker, Checkbox, Radio, Textarea, File upload, etc.)
+- **Required / Optional**
+- **Validation Rules & Constraints:** (Min/max length, regex/format, trim spaces, uniqueness, boundary values, date limits, allowed file extensions/sizes)
+- **Default Value**
+- **Notes / Dependencies**
+
+### Step 5: Construct Traceability Matrix, RBAC & Impact Analysis
+1. **Traceability Matrix:** Map every Business Requirement (BR) to Functional Requirements (FR), Acceptance Criteria (AC), and test scope focus.
+2. **Permission Matrix (RBAC):** Permission checklist table for each Actor (e.g., Super Admin, Admin, Member, Guest/Public) across CRUD actions.
+3. **Downstream Impacts:** Analyze ripple effects on other modules, screens, APIs, databases, or third-party integrations when this feature changes.
+
+### Step 6: Detect Ambiguities (AMB-XX) & Testing Risks (RISK-XX)
 > [!IMPORTANT]
-> Đây là bước mang lại giá trị cao nhất — phát hiện những điểm yêu cầu KHÔNG nói rõ, nói mâu thuẫn hoặc thiếu xử lý biên.
+> This step delivers critical value — uncovering details NOT explicitly stated, contradictory descriptions, or missing boundary/exception handlers in requirements.
 
-1. **Danh sách Điểm Mơ Hồ (Ambiguities - AMB-XX):**
-   - Từ khóa mơ hồ, cảm tính: *"phù hợp", "tương tự", "nếu cần", "nhanh chóng", "etc."*
-   - Lỗi thiếu Boundary: Không quy định max length, không rõ định dạng date/time, thiếu rate limit/pagination size.
-   - Thiếu xử lý ngoại lệ: Khi mất mạng giữa chừng, khi API bên thứ 3 bị lỗi/timeout, khi dữ liệu rỗng.
-   - Mâu thuẫn: Sai lệch giữa mô tả text trong document và hình ảnh trong UI Mockup.
-   - Đánh số **AMB-01, AMB-02...** kèm mức độ (🔴 High / 🟡 Medium / 🟢 Low) và câu hỏi khuyến nghị cho PO/BA.
-2. **Danh sách Rủi Ro Kiểm Thử (Testing Risks - RISK-XX):**
-   - Đánh giá các rủi ro về mặt logic, hiệu năng, đồng bộ dữ liệu, bảo mật hoặc trải nghiệm người dùng.
-   - Đánh số **RISK-01, RISK-02...** kèm biện pháp giảm thiểu (Mitigation Strategy).
+1. **Ambiguities (AMB-XX):**
+   - Vague, subjective keywords: *"suitable", "similar", "as needed", "quickly", "etc."*
+   - Missing boundary constraints (e.g., undefined max length, missing pagination limit, unstated date ranges).
+   - Missing exception handling (e.g., API timeout, server error 500, network drop, concurrent requests).
+   - Contradictions between text descriptions and UI mockups.
+   - Label as **AMB-01, AMB-02...** with severity level (🔴 High / 🟡 Medium / 🟢 Low) and recommended clarification questions for PO/BA.
+2. **Testing Risks (RISK-XX):**
+   - Assess risks related to logic conflicts, performance bottlenecks, data integrity, security, or usability.
+   - Label as **RISK-01, RISK-02...** with concrete Mitigation Strategies.
 
 ---
 
-## 4. Cấu Trúc Tài Liệu Đầu Ra (Output Template Artifact)
+## 4. Output Template Artifact Structure
 
-Kết quả phân tích PHẢI được xuất dưới dạng Artifact Markdown (`analysis_report.md` hoặc `requirements_spec_[FEATURE].md`) theo cấu trúc tổng quát chuẩn sau:
+Analysis results MUST be exported as a Markdown Artifact (`analysis_report.md` or `requirements_spec_[FEATURE].md`) using the standard general structure below:
 
 ```markdown
-# 📋 Tài Liệu Phân Tích Yêu Cầu: [TÊN TÍNH NĂNG / TICKET ID]
-> **Dự án:** [Tên Dự Án] | **Module:** [Tên Module] | **Ngày phân tích:** [YYYY-MM-DD]
+# 📋 Requirement Analysis Document: [FEATURE NAME / TICKET ID]
+> **Project:** [Project Name] | **Module:** [Module Name] | **Analysis Date:** [YYYY-MM-DD]
+> **Requirement Basis:** [BRD / FRD / SRS / Jira Ticket / User Story Reference]
 
 ---
 
-## 1. Tổng Quan & Phạm Vi (Overview & Scope)
-- **Tên tính năng / Yêu cầu:** ...
-- **Actors tham gia:** [Danh sách các Actor / Role]
-- **Mục đích nghiệp vụ:** ...
-- **Phạm vi áp dụng (In Scope):** ...
-- **Phạm vi loại trừ (Out of Scope):** ...
+## 1. Overview & Scope
+- **Feature Name / Requirement ID:** ...
+- **Business Purpose & Context:** ...
+- **Participating Actors / Roles:** [List of Actors / Roles]
+- **In Scope:** ...
+- **Out of Scope:** ...
 
 ---
 
-## 2. User Story & Acceptance Criteria (AC)
+## 2. User Story & Business Requirements
 ### 2.1. User Story
-> *As a* [Actor], *I want* [Hành động], *So that* [Giá trị mang lại].
+> *As a* [Actor], *I want to* [Action], *So that* [Value / Business Goal].
 
-### 2.2. Phân Rã Acceptance Criteria
-- **AC-01 [Tên AC]:** Mô tả chi tiết luồng xử lý...
-- **AC-02 [Tên AC]:** Mô tả chi tiết luồng xử lý...
+### 2.2. Business Requirements (BR)
+- **BR-01:** [Core business rule, policy, calculation formula, domain constraint]
+- **BR-02:** [Operational rule, state lifecycle prerequisite]
 
 ---
 
-## 3. Đặc Tả Trường Dữ Liệu (Field Specifications)
-| Tên Trường (Label) | UI Type | Required | Validation Rules / Constraints | Default Value | Notes |
+## 3. Functional Requirements & Logic Flow
+### 3.1. Functional Requirements (FR) & Acceptance Criteria (AC)
+- **FR-01 [Feature / Function Name]:**
+  - **Description:** ...
+  - **AC-01.1 (Happy Path):** ...
+  - **AC-01.2 (Alternative / Edge Flow):** ...
+  - **AC-01.3 (Exception / Failure Flow):** ...
+- **FR-02 [Feature / Function Name]:**
+  - **Description:** ...
+  - **AC-02.1 (Happy Path):** ...
+  - **AC-02.2 (Exception Flow):** ...
+
+### 3.2. Logic Flow & State Transitions
+- **State Transitions:** [e.g., Draft ➔ In Review ➔ Published / Rejected]
+- **Error & Exception Handling:** [Behaviors on timeout, network drop, validation failure, rate limit]
+
+---
+
+## 4. Field Specifications
+| Field Name (Label) | Control / UI Type | Required | Validation Rules / Constraints | Default Value | Notes / Dependencies |
 |---|---|---|---|---|---|
-| [Tên trường 1] | Input Text | Yes | Min 3, Max 50 chars, trimmed, unique | N/A | ... |
-| [Tên trường 2] | Dropdown | No | Option values: [A, B, C] | Option A | ... |
+| [Field Name 1] | Text Input | Yes | Min 3, Max 50 chars, trimmed, unique | N/A | Must not duplicate existing records |
+| [Field Name 2] | Dropdown | No | Option values: [Option A, Option B, Option C] | Option A | Triggers dynamic field X when Option B selected |
+| [Field Name 3] | Datepicker | Yes | Cannot be in past, Format: YYYY-MM-DD | Today | Dependent on Start Date |
 
 ---
 
-## 4. Quy Tắc Nghiệp Vụ & Luồng Xử Lý (Business Rules & Logic)
-- **BR-01:** Quy tắc kiểm tra/tính toán nghiệp vụ 1...
-- **BR-02:** Trạng thái chuyển đổi dữ liệu (State transitions)...
-
----
-
-## 5. Ma Trận Phân Quyền (RBAC) & Tác Động Dây Chuyền
-### 5.1. Ma Trận Phân Quyền (RBAC Matrix)
-| Hành động / Feature | [Role 1] | [Role 2] | [Role 3] |
+## 5. Permission Matrix (RBAC) & Downstream Impacts
+### 5.1. Role-Based Access Control Matrix (RBAC)
+| Action / Feature | [Role 1 / Admin] | [Role 2 / User] | [Role 3 / Guest] |
 |---|---|---|---|
-| Xem danh sách | ✅ Allowed | ✅ Allowed | ❌ Denied |
-| Tạo / Chỉnh sửa | ✅ Allowed | ❌ Denied | ❌ Denied |
+| View / Read List | ✅ Allowed | ✅ Allowed | ❌ Denied |
+| Create / Edit Record | ✅ Allowed | ❌ Denied | ❌ Denied |
+| Delete / Archive | ✅ Allowed | ❌ Denied | ❌ Denied |
 
-### 5.2. Tác động Dây chuyền (Downstream Impacts)
-- Ảnh hưởng tới **Module/Màn hình A:** ...
-- Ảnh hưởng tới **API/Cơ sở dữ liệu B:** ...
-
----
-
-## 6. Đánh Giá Tiêu Chuẩn "Ready For Vibe Coding" (12 Quality Gates)
-- [x] 1. Who (Actor & Role): ...
-- [x] 2. Preconditions: ...
-- [x] 3. Inputs: ...
-- [x] 4. Validations: ...
-- [x] 5. Data State Changes: ...
-- [x] 6. Success Flow: ...
-- [ ] 7. Failure Flow: ⚠️ (Cần làm rõ hành vi khi API timeout)
-- [x] 8. Empty States: ...
-- [x] 9. Permission Checks: ...
-- [x] 10. Business Rules & Formulas: ...
-- [x] 11. Downstream Impacts: ...
-- [x] 12. Acceptance Criteria: ...
+### 5.2. Downstream Impacts & Dependencies
+- **Impact on Modules / Screens:** [e.g., Updates user profile card in Dashboard]
+- **Impact on APIs / Database:** [e.g., New columns added to `users` table, modifies `/api/v1/users` response]
+- **Third-Party Services:** [e.g., Payment Gateway webhook, SMS Provider]
 
 ---
 
-## 7. Các Điểm Mơ Hồ (Ambiguities) & Rủi Ro Kiểm Thử (Testing Risks)
-
-### 7.1. Danh Sách Điểm Mơ Hồ (Ambiguities)
-| Mã AMB | Câu hỏi / Điểm chưa rõ | Nguy cơ / Tác động | Mức độ | Khuyến nghị cho PO/BA |
+## 6. Traceability Matrix
+| BR ID | Functional Requirement (FR) | Acceptance Criteria (AC) | Coverage / Verification Type | Test Scope Focus |
 |---|---|---|---|---|
-| AMB-01 | [Mô tả chi tiết điểm chưa rõ] | [Impact nếu không làm rõ] | 🔴 High | [Đề xuất hướng giải quyết] |
-| AMB-02 | ... | ... | 🟡 Medium | ... |
+| BR-01 | FR-01: [Function Name] | AC-01.1, AC-01.2 | Functional / UI Flow | Positive / Happy Path |
+| BR-01 | FR-01: [Function Name] | AC-01.3 | Validation / Error Handling | Negative / Boundary |
+| BR-02 | FR-02: [Function Name] | AC-02.1, AC-02.2 | Security & Permission | RBAC / State Transition |
 
-### 7.2. Danh Sách Rủi Ro Kiểm Thử (Testing Risks)
-| Mã RISK | Tên Rủi Ro | Mô tả Chi tiết Rủi Ro | Biện pháp giảm thiểu (Mitigation) |
+---
+
+## 7. Ambiguities & Testing Risks
+
+### 7.1. Ambiguities (AMB-XX)
+| AMB ID | Ambiguity / Unclear Point | Impact / Risk if Unresolved | Severity | Recommended Clarification Question for PO/BA |
+|---|---|---|---|---|
+| AMB-01 | [Detailed description of unclear point] | [Impact if not clarified] | 🔴 High | [Clear question proposing resolution options] |
+| AMB-02 | [Vague keyword / missing boundary] | [Inconsistent test behavior] | 🟡 Medium | [Question to confirm boundary specification] |
+
+### 7.2. Testing Risks (RISK-XX)
+| RISK ID | Risk Name | Detailed Risk Description | Mitigation Strategy |
 |---|---|---|---|
-| RISK-01 | [Tên rủi ro] | [Mô tả nguy cơ sai sót logic/hiệu năng] | [Giải pháp phòng ngừa khi test] |
+| RISK-01 | [Risk Name] | [Description of logic error, performance, or security risk] | [Concrete test approach to mitigate risk] |
 | RISK-02 | ... | ... | ... |
 
 ---
 
-## 8. Tóm Tắt Acceptance Criteria (Checklist Cho QA)
-- [ ] AC-01: Kiểm tra thực hiện luồng thành công với dữ liệu hợp lệ.
-- [ ] AC-02: Kiểm tra báo lỗi Validation khi nhập sai định dạng/vượt giới hạn.
-- [ ] AC-03: Kiểm tra xử lý khoảng trắng đầu/cuối (trimming).
-- [ ] AC-04: Kiểm tra phân quyền truy cập theo từng Role.
+## 8. Acceptance Criteria Checklist (QA Execution Baseline)
+- [ ] AC-01.1: Verify execution of success flow with valid data.
+- [ ] AC-01.2: Verify handling of alternative flows.
+- [ ] AC-01.3: Verify Validation error prompt when inputting invalid format or exceeding boundary limits.
+- [ ] AC-02.1: Verify role-based access permission enforcement across all User Roles.
 ```
 
 ---
 
-## 5. Quy Tắc Bắt Buộc (Strict Rules)
+## 5. Strict Rules
 
-1. 🇻🇳 **Ngôn ngữ:** Xuất báo cáo phân tích bằng **Tiếng Việt** chuyên nghiệp, chuẩn mực.
-2. ❌ **KHÔNG sinh test cases:** Tuyệt đối không sinh danh sách test cases chi tiết (dành cho skill `$generate-manual-testcases-rbt` hoặc `$generate-testcases-from-requirements`).
-3. ❌ **KHÔNG tự suy diễn logic:** Nếu tài liệu chưa nói rõ hoặc có sự mâu thuẫn, PHẢI đưa vào mục **Ambiguities (AMB-XX)** để clarify với PO/BA.
-4. ✅ **Tính Tổng Quát (Generality):** Áp dụng linh hoạt cho mọi miền bài toán (E-commerce, EdTech, Fintech, CRM, Healthcare...) và mọi nền tảng (Web, App, API, Desktop).
+1. 🌐 **Language:** Output analysis reports in clear, professional **English** (or match user-specified language).
+2. ❌ **NO Test Case Generation:** Strictly DO NOT generate detailed test case steps or execution scripts in this workflow. This skill produces the requirement specification & analysis baseline only.
+3. ❌ **NO Logic Guessing:** If the document is unclear, ambiguous, or contradictory, MUST record the issue in the **Ambiguities (AMB-XX)** table for PO/BA clarification rather than making assumptions.
+4. ✅ **Full Traceability:** Every Functional Requirement (FR) and Acceptance Criteria (AC) must trace back to Business Requirements (BR) through the **Traceability Matrix**.
+5. ✅ **Cross-Domain Generality:** Flexibly apply across all software domains (E-commerce, FinTech, EdTech, CRM, Healthcare, SaaS...) and platforms (Web, Mobile, Desktop, API).
+
+---
+
+## 6. Relationship with Other Testing Workflows (Workflow Integration)
+
+This skill serves as **Phase 1 (Requirement Analysis & Decomposition)** in the end-to-end QA manual testing lifecycle. The generated requirement artifact directly powers and integrates with downstream skills:
+
+| Phase | Downstream Skill | Target Path | Input Provided by this Skill |
+|---|---|---|---|
+| **Phase 2: Test Planning** | `$test-plan` | `.agents/skills/test-plan` | In/Out Scope, Business Goals, Downstream Impacts, and Testing Risks (RISK-XX). |
+| **Phase 3: Test Case Design** | `$test-case` | `.agents/skills/test-case` | Functional Requirements (FR), Acceptance Criteria (AC), Logic Flows, and Traceability Matrix. |
+| **Phase 4: Test Data Generation** | `$test-data-generator` | `.agents/skills/test-data-generator` | Field Specifications (Validation Rules, Min/Max Limits, Data Types, Boundary Values, Formats). |
+
+```mermaid
+flowchart TD
+    Req["Requirement Basis\n(BRD / FRD / SRS / Jira / Mockup)"] --> Skill["$analyze-requirement\n(Requirement Analysis Artifact)"]
+    
+    Skill -->|"Scope, Objectives & Risks"| TestPlan["$test-plan\n(QA Test Plan Document)"]
+    Skill -->|"FR, AC & Traceability Matrix"| TestCase["$test-case\n(Test Cases & Test Suites)"]
+    Skill -->|"Field Specs, Validations & Boundaries"| TestData["$test-data-generator\n(Structured Test Data Sets)"]
+```
