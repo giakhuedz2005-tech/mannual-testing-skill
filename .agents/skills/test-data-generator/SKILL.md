@@ -1,4 +1,4 @@
----
+ sql
 name: test-data-generator
 description: Generate structured, unique, and traceable manual & automated test datasets for test cases designed with $test-case (resolving TD-* profile references), field specifications from $analyze-requirement, and test techniques (BVA, EP, Decision Tables, Pairwise Combinations, Multi-Step Data Chains).
 ---

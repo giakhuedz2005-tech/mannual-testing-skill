@@ -8,6 +8,6 @@ Test_Cases	Test ID	TC-[AREA]-[FUNCTION]-[NUMBER]	TC-CAND-ADD-001
 	Priority	High	
 	Test Preconditions		
 	Test Steps	Action verb + UI object + test data / condition	1. Click the Add button. 2. Enter Candidate information using TD-CAND-ADD-001. 3. Upload FILE-RESUME-VALID-001. 4. Click Save.
-	Expected Result	- Observable response - Data/state change	
+	Expected Result	1. [UI] Observable UI response (UI feedback, toast, redirect, validation message). 2. [DB] Data/state change (table row INSERT/UPDATE/DELETE or non-mutation 0 rows modified).	
 	Actual Results 	NOT RUN	
 	Notes 	Perspective: Positive | Technique: Boundary Value Analysis (BVA): minimum valid and maximum valid.	
